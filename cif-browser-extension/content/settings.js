@@ -125,7 +125,8 @@ CIF_CLIENT.test_settings=function(clickedbutton){
 	var cifapikey=$(".keyinput",clickedbutton.parent().parent()).val().trim();
 	window.visitme="If you use a self-signed certificate, you will need to <a target='_blank' href='"+cifurl+cifquery+"?apikey="+cifapikey+"'>accept your certificate</a> before this will work.";
 	try{
-		$.getJSON(cifurl+cifquery+"?apikey="+cifapikey+"&fmt=json",function(data) {
+		$.getJSON(cifurl+"?q="+cifquery+"&apikey="+cifapikey+"&fmt=json",function(data) {
+			//This will never execute until CIF resturns valud JSON (as of v1 it does)
 			if (data['status']==200){
 				$(".teststatus",clickedbutton.parent().parent()).html('<span class="label label-success">connection successful</span>');
 			}
@@ -139,8 +140,18 @@ CIF_CLIENT.test_settings=function(clickedbutton){
 			} else if (e['status']==404){
 				errmsg='404 error. make sure that you have the correct path to the API';
 			} else if (e['status']==200){
-				console.log(e);
+				/*
+				Workaround because CIFv1 does not return valid JSON and sets the Content-Type 
+				to application/json even when plain text is just returned. This causes $.getJSON()
+				and just plain old $.get() to fail everytime.
+				*/
+				if (e['responseText']=='missing query') {
+					$(".teststatus",clickedbutton.parent().parent()).html('<span class="label label-success">connection successful</span>');
+					return;
+				} else {
+					console.log(e);
 				errmsg='bad response. is that the path to a CIF API?';
+				}
 			} else {
 				errmsg='Could not connect to that address.<br/><i>'+window.visitme+'</i>';
 			}
